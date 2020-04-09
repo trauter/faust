@@ -789,6 +789,17 @@ class Recovery(Service):
         """Return counter of remaining changes by active partition."""
         highwaters = self.active_highwaters
         offsets = self.active_offsets
+        for tp, highwater in highwaters.items():
+            if highwater is not None:
+                offset = offsets[tp]
+                hw = highwater
+                diff = None
+                if hw is not None and offset is not None:
+                    diff = offset - highwater
+                myst = (f'active-remaining: {tp} {hw} {offset} {diff}')
+                self.log.info(myst)
+            else:
+                self.log.info('active-remaining: NOne')
         return Counter({
             tp: highwater - offsets[tp]
             for tp, highwater in highwaters.items()
