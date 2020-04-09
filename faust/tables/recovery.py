@@ -716,6 +716,8 @@ class Recovery(Service):
                 event: EventT = await asyncio.wait_for(
                     changelog_queue.get(), timeout=5.0)
             except asyncio.TimeoutError:
+                text = f'did not receive message for 5s {self.should_stop}'
+                self.log.warning(text)
                 if self.should_stop:
                     return
                 _maybe_signal_recovery_end()
@@ -725,7 +727,8 @@ class Recovery(Service):
             message = event.message
             tp = message.tp
             offset = message.offset
-
+            text = f'got {tp} {offset}'
+            self.log.warning(text)
             offsets: Counter[TP]
             bufsize = buffer_sizes.get(tp)
             is_active = False
