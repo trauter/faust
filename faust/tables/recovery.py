@@ -703,6 +703,8 @@ class Recovery(Service):
         processing_times = self._processing_times
 
         def _maybe_signal_recovery_end() -> None:
+            text = f'maybe_end: {self.in_recovery}'
+            self.log.warning(text)
             if self.in_recovery and not self.active_remaining_total():
                 # apply anything stuck in the buffers
                 self.flush_buffers()
