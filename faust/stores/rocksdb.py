@@ -4,6 +4,7 @@ import gc
 import math
 import shutil
 import typing
+import traceback
 
 from collections import defaultdict
 from contextlib import suppress
@@ -192,6 +193,14 @@ class Store(base.SerializedStore):
         to only read the events that occurred recently while
         we were not an active replica.
         """
+
+        if tp.partition not in self._dbs.keys():
+            s = f'will not set partition offset for {tp}, ' \
+                f'which is not yet loaded\n'\
+                f'{traceback.format_stack()}'
+            self.log.error(s)
+            return
+
         self._db_for_partition(tp.partition).put(
             self.offset_key, str(offset).encode())
 
@@ -271,6 +280,9 @@ class Store(base.SerializedStore):
         try:
             return self._dbs[partition]
         except KeyError:
+            s = f'loading db for tp {partition}, ' \
+                f'{traceback.format_stack()}'
+            self.log.warning(s)
             db = self._dbs[partition] = self._open_for_partition(partition)
             return db
 
