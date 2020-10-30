@@ -5,6 +5,7 @@ import math
 import shutil
 import typing
 import traceback
+import os
 
 from collections import defaultdict
 from contextlib import suppress
@@ -174,6 +175,7 @@ class Store(base.SerializedStore):
         self.key_index_size = key_index_size
         self._dbs = {}
         self._key_index = LRUCache(limit=self.key_index_size)
+        self.sx_debug = os.getenv('SXFAUST_DEBUG_TABLES', False)
 
     def persisted_offset(self, tp: TP) -> Optional[int]:
         """Return the last persisted offset.
@@ -269,11 +271,18 @@ class Store(base.SerializedStore):
             self.set_persisted_offset(tp, offset)
 
     def _set(self, key: bytes, value: Optional[bytes]) -> None:
+
+        if self.sx_debug:
+            str = f'SXFAUST_ROCKSDB_DEBUG: set {key}={value}'
+            self.log.warning(str)
         event = current_event()
         assert event is not None
         partition = event.message.partition
         db = self._db_for_partition(partition)
         self._key_index[key] = partition
+        if self.sx_debug:
+            str = f'SXFAUST_ROCKSDB_DEBUG: partion {key}={partition}'
+            self.log.warning(str)
         db.put(key, value)
 
     def _db_for_partition(self, partition: int) -> DB:
@@ -290,11 +299,16 @@ class Store(base.SerializedStore):
         return self.rocksdb_options.open(self.partition_path(partition))
 
     def _get(self, key: bytes) -> Optional[bytes]:
+        if self.sx_debug:
+            str = f'SXFAUST_ROCKSDB_DEBUG: try get {key}'
+            self.log.warning(str)
         dbvalue = self._get_bucket_for_key(key)
         if dbvalue is None:
             return None
         db, value = dbvalue
-
+        if self.sx_debug:
+            str = f'SXFAUST_ROCKSDB_DEBUG: get {key} {value}'
+            self.log.warning(str)
         if value is None:
             if db.key_may_exist(key)[0]:
                 return db.get(key)
