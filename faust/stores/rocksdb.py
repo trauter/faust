@@ -260,8 +260,15 @@ class Store(base.SerializedStore):
             )
             msg = event.message
             if msg.value is None:
+                str = f'SXFAUST_ROCKSDB_DEBUG: "' \
+                      f'idel on  {msg.partition} {msg.key}={msg.value}'
+                self.log.warning(str)
                 batches[msg.partition].delete(msg.key)
             else:
+                if self.sx_debug:
+                    str = f'SXFAUST_ROCKSDB_DEBUG: "' \
+                          f'iset on  {msg.partition}  {msg.key}={msg.value}'
+                    self.log.warning(str)
                 batches[msg.partition].put(msg.key, msg.value)
 
         for partition, batch in batches.items():
